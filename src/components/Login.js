@@ -30,7 +30,11 @@ const[user, setUser] = useState('')
  
     useEffect(() => {
       setErrMsg('');
+  
   }, [user, password])
+
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -39,7 +43,6 @@ const[user, setUser] = useState('')
   console.log(response);
   const accessToken = response?.data?.access_token;
   const refreshToken = response?.data?.refresh_token;
-
   const roles = response?.data?.authorities;
   console.log(response.data.authorities);
   localStorage.setItem("Authorities", roles);
@@ -48,6 +51,8 @@ const[user, setUser] = useState('')
   localStorage.setItem("Access Token", accessToken);
 
   localStorage.setItem("email", email);
+  localStorage.setItem("phone", phone);
+
   localStorage.setItem("password", password);
   localStorage.setItem("role", roles);
 
@@ -74,7 +79,12 @@ const[user, setUser] = useState('')
     }
   }
 
- 
+  useEffect(()=>{
+    let testEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    let testPhone = /^\+?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}$/im;
+    if (testEmail.test(user)) setEmail(user);
+    else setPhone(user)
+},[handleSubmit])
 
 const popup =()=>{
 

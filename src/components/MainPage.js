@@ -4,7 +4,7 @@ import Login from './Login';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { booleanContext } from '../Context';
 import Home from './Home';
-const CHECK_LOGIN_URL = '/api/auth/token/refresh';
+const CHECK_LOGIN_URL = '/user/auth/token/refresh';
 
 function MainPage(props) {
     const [email, setEmail] = useState('')
@@ -23,7 +23,7 @@ function MainPage(props) {
         try{
           
             const response = await axios.get(CHECK_LOGIN_URL, refresh);
-           
+           setIsLoggedIn(true)
         setEmail(localStorage.getItem("email"))
        
             
