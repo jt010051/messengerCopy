@@ -14,7 +14,7 @@ const NewPassword = () => {
     const [editedPassword, setEditedPassword] = useState('')
     const [confirmEditedPassword, setConfirmEditedPassword] = useState('')
 
-    const username = localStorage.getItem("username")
+    const username = localStorage.getItem("username Copy")
     const [id, setId] = useState(0)
     const navigate = useNavigate();
     const location = useLocation();

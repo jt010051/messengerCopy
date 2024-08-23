@@ -11,7 +11,7 @@ function MainPage(props) {
     const{isLoggedIn, setIsLoggedIn} =useContext(booleanContext)
     const refresh = {headers :{
         'Content-Type' : 'application/json',
-        AUTHORIZATION : 'Bearer ' +localStorage.getItem("Refresh Token")
+        AUTHORIZATION : 'Bearer ' +localStorage.getItem("Refresh Token Copy")
         
             }}
 
@@ -24,7 +24,7 @@ function MainPage(props) {
           
             const response = await axios.get(CHECK_LOGIN_URL, refresh);
            setIsLoggedIn(true)
-        setEmail(localStorage.getItem("email"))
+        setEmail(localStorage.getItem("email Copy"))
        
             
 
@@ -46,7 +46,8 @@ useEffect(() => {
       <>
       <Routes>
 
-     {isLoggedIn ? <Route path="/" element={<Home />} />:  <Route path="/" element={<Login />} />}
+     {/* {isLoggedIn ? <Route path="/" element={<Home />} />:  <Route path="/" element={<Login />} />} */}
+     < Route path="/" element={<Home />} />
      </Routes>
       </>
     );

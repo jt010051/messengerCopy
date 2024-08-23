@@ -45,16 +45,16 @@ const[user, setUser] = useState('')
   const refreshToken = response?.data?.refresh_token;
   const roles = response?.data?.authorities;
   console.log(response.data.authorities);
-  localStorage.setItem("Authorities", roles);
-  localStorage.setItem("Refresh Token", refreshToken);
+  localStorage.setItem("Authorities Copy", roles);
+  localStorage.setItem("Refresh Token Copy", refreshToken);
   localStorage.setItem("Access Token", accessToken);
-  localStorage.setItem("Access Token", accessToken);
+  localStorage.setItem("Access Token Copy", accessToken);
 
-  localStorage.setItem("email", email);
-  localStorage.setItem("phone", phone);
+  localStorage.setItem("email Copy", email);
+  localStorage.setItem("phone Copy", phone);
 
-  localStorage.setItem("password", password);
-  localStorage.setItem("role", roles);
+  localStorage.setItem("password Copy", password);
+  localStorage.setItem("role Copy", roles);
 
   setIsLoggedIn(true)
 
@@ -91,7 +91,7 @@ const popup =()=>{
     return(
         <>
 
-          <Register />
+          { <Register />}
         
         </>
     )

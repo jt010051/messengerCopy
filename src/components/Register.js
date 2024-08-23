@@ -13,70 +13,140 @@ const CREATE_URL = '/user/save';
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || "/login";
+  const from = location.state?.from?.pathname || "/";
     const [errMsg, setErrMsg] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
     const[user, setUser] = useState('')
     const [gender, setGender] = useState('')
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [email, setEmail] = useState('')
     const [generate,setGenerate] = useState(false)
-const[firstRun, setFirstRun] = useState(true)
+const[submitFlag, setSubmitFlag] = useState(true)
 const [role, setRole] = useState('')
 const LOGIN_URL = '/api/auth/user/save';
 const [birthDate, setBirthDate] = useState('')
 const [phone, setPhone] = useState('')
+const [firstRun, setFirstRun] = useState(true)
+
+
 
 
     const handleSubmit = async (e) => {
-        const json = `{"email" : "${email}", "password" : "${password}", 
+      if(password !== confirmPassword){
+        alert("Passwords don't match");
+        return;
+      }
+
+      let json = ``;
+    
+     if(phone){
+      console.log(phone);
+      let testPhone = /^\+?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}$/im;
+      if(!testPhone.test(user)) alert("Not Valid Email or Phone Number") 
+      json = `{"email" : "", "password" : "${password}", 
         "firstName" : "${firstName}", "lastName" : "${lastName}",   
          "gender" : "${gender}", "birthDate" : "${birthDate}",
-         "phone" : "${phone}", "isPending" : "${true}"}`;
-        const userJson = JSON.parse(json);
-        console.log(phone);
-        try {
-            const response = await axios.post(CREATE_URL, userJson);
-    if(response.data !== ''){
-      console.log(response);
-      console.log("Account not found, creating new account");
-      console.log(role);
+         "phone" : "${phone}", "isPending" : "${true}"}`  
+      }
+else if (email){
+  json = `{"email" : "${email}", "password" : "${password}", 
+        "firstName" : "${firstName}", "lastName" : "${lastName}",   
+         "gender" : "${gender}", "birthDate" : "${birthDate}",
+         "phone" : "", "isPending" : "${true}"}`
+}
+      if(!user && !phone && !email) {
+        alert("Please enter email or phone number")
+        return;
+      }
+      const userJson = JSON.parse(json);
+      try {
+          const response = await axios.post(CREATE_URL, userJson);
+          if (response.data === ''){
+            console.log(response);
+            alert("User already in database")
+            setUser('')
+            setEmail('')
+            setPhone('')
+            setPassword('')
+            setFirstName('')
+            setLastName('')
+                setGender('')
+                setRole('')
+            return;
+          }  
+    console.log(response);
+    console.log("Account not found, creating new account");
+    console.log(role);
 
-           nextResponse()
-    }
-        else{
-          alert("User already in database")
-        }   
+         nextResponse()
 
-        }
-        catch (err) {
-            if (!err?.response) {
-              
-                setErrMsg('No Server Response');
-            } else if (err.response?.status === 400) {
-                setErrMsg('Missing Email or Password');
-            } else if (err.response?.status === 401) {
-                setErrMsg('Unauthorized');
-            } else {
-                setErrMsg('Registration Failed');
-            }
-        }
+      
+ 
+
     }
+    catch (err) {
+      if (!err?.response) {
+        
+          setErrMsg('No Server Response');
+      } else if (err.response?.status === 400) {
+          setErrMsg('Missing Email or Password');
+      } else if (err.response?.status === 401) {
+          setErrMsg('Unauthorized');
+      } else {
+          setErrMsg('Registration Failed');
+      }
+      setUser('')
+      setEmail('')
+      setPhone('')
+      setPassword('')
+      setFirstName('')
+      setLastName('')
+          setGender('')
+          setRole('')  }
+        }
+     
+    
     const nextResponse = async() =>{
       console.log(role);
-      const pendingRoleUrl = `user/pendingRole?pendingRole=${role}&email=${email}`
-     
+    
+      let pendingRoleUrl = ``
+      if(phone) pendingRoleUrl = `user/pendingRole?pendingRole=${role}&user=${phone}`
+     else pendingRoleUrl = `user/pendingRole?pendingRole=${role}&user=${email}`
 try{
 
   const response = await axios.post(pendingRoleUrl)
   alert("Account Created")
+  
+  window.location.reload();
+
 }catch(err){
   console.log(err);
 }
+setUser('')
+  setEmail('')
+  setPhone('')
+  setPassword('')
+  setFirstName('')
+  setLastName('')
+      setGender('')
+      setRole('')
     }
- 
-   
+    useEffect(()=>{
+
+  
+      const testEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+     
+         if (testEmail.test(user)) setEmail(user);
+        else setPhone(user)
+    
+        console.log("here");
+    },[user])
+
+
+
   return (
     <>
   
@@ -134,7 +204,9 @@ style={{backgroundColor: "white"}}
  <tr>
   <div className="form-group">
    <label htmlFor="password">Confirm Password</label>
-   <input type="password" className="form-control" id="password" placeholder="password"  name="password" required/>
+   <input type="password" className="form-control" id="password" placeholder="password"  name="password" 
+    onChange={(e) => setConfirmPassword(e.target.value)}
+    value={confirmPassword}required/>
    
  </div>
  </tr>
@@ -170,19 +242,7 @@ required />
 
 </tr>
 <tr>
- <Button type="button" className="btn btn-primary" onClick={ () =>{
-    let testEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    let testPhone = /^\+?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}$/im;
-    if ( !testEmail.test(user)  && !testPhone.test(user) || user.length === 0) {
-    alert("Not Valid Email or Phone Number")
-    return;
-    }
-    else if (testEmail.test(user)) setEmail(user);
-    else setPhone(phone)
-    handleSubmit()
-
-
- }} >Register</Button>
+ <Button type="button" className="btn btn-primary"  onClick={()=> handleSubmit()}>Register</Button>
  </tr>
  </tbody>
  <div id="message">

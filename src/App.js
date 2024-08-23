@@ -7,6 +7,7 @@ import { booleanContext, usernameContext, oppositeContext, incrementContext, ref
 import Forgot from './components/Forgot';
 import NewPassword from './components/NewPassword'
 import Logout from './components/Logout';
+import { StompSessionProvider } from 'react-stomp-hooks';
 
 
 
@@ -16,6 +17,8 @@ function App() {
 
   return(
 <>
+<StompSessionProvider
+    url={'http://localhost:8080/ws'}>
 <booleanContext.Provider value={{isLoggedIn, setIsLoggedIn}}>
 
 <Routes>
@@ -30,7 +33,7 @@ function App() {
         
 </Routes>
 </booleanContext.Provider>
-
+</StompSessionProvider>
 </>
   );
 }

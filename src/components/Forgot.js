@@ -29,7 +29,7 @@ const from = location.state?.from?.pathname || "/";
             return;
         }
         navigate(changePass, { replace: true });
-        localStorage.setItem("username", username)
+        localStorage.setItem("username Copy", username)
     }
     const back =() =>{
         navigate(from, { replace: true });
