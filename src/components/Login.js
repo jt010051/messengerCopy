@@ -1,7 +1,7 @@
 import axios from '../api/axios';
 import React, {useEffect, useState, useContext, useRef} from 'react'
 import { Button } from 'react-bootstrap';
-import { booleanContext } from '../Context';
+import { booleanContext, usernameContext } from '../Context';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Register from './Register';
 import Popup from 'reactjs-popup';
@@ -21,6 +21,7 @@ function Login() {
     const [password, setPassword] = useState('');
     const [errMsg, setErrMsg] = useState('');
     const [seen, setSeen] = useState(false)
+    const{currentUser, setCurrentUser} =useContext(usernameContext)
 
 const[user, setUser] = useState('')
 
@@ -58,6 +59,7 @@ const[user, setUser] = useState('')
 
   setIsLoggedIn(true)
 
+setCurrentUser(user)
 
   alert("Login Successful");
   navigate(from, { replace: true });

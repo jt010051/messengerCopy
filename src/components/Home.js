@@ -1,19 +1,18 @@
-import React, {  useEffect, useRef, useState,useCallback, act } from 'react';
+import React, {  useEffect, useRef, useState,useCallback, act, useContext } from 'react';
 import { Button } from 'react-bootstrap';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import { useStompClient, useSubscription } from 'react-stomp-hooks';
 import user_icon from '../img/user_icon.png'
+import { usernameContext } from '../Context';
 
 
 const  Home = () => {
-    let currentUser = 'Jon-Thomas2';
-    let email = 'jt010051@gmail.com';
-    let phone = ''
+    // let email = 'jont26.smith@gmail.com';
+    // let phone = ''
 
     const navigate = useNavigate();
     const location = useLocation();
-    const userDetailsApi = `user/userDetails/${currentUser}`
     const log = location.state?.from?.pathname || "/logout";
     const stompClient = useStompClient();
     const messagesEndRef = useRef(null)
@@ -25,6 +24,8 @@ const  Home = () => {
     const [recievedMessages, setRecievedMessages] = useState(false)
     const [otherUser, setOtherUser] = useState('')
     const [userChatResponse, setUserChatResponse] = useState([]);
+    const currentUser =localStorage.getItem("email Copy")
+    const userDetailsApi = `user/userDetails/${currentUser}`
 
 	useSubscription(`/user/public`)
 
@@ -55,16 +56,26 @@ const  Home = () => {
         }
     )
 
-    if (!currentUser) {
-        currentUser = localStorage.getItem("phone");
-    }
+    // if (!currentUser) {
+    //     currentUser = localStorage.getItem("phone");
+    // }
 
 
 
      const findAndDisplayConnectedUsers = async(e) =>{
+        console.log(currentUser);
+        const response = await axios.get(`chatUsers/currentUser/${currentUser}`)
+                console.log(response.data);
+
+     let email = (response.data.email != null ? response.data.email : null)
+    let phone = (response.data.phone != null ? response.data.phone : null)
+            const thisUser = (email != null ? email : phone)
+console.log(response.data.email);
+
         try{
             const connectedUsersList  
-                = await axios.get('chatUsers/allUsers');
+                = await axios.get(`chatUsers/usersOnline/${thisUser}`);
+            console.log(connectedUsersList);
             
             setListOfUsers(connectedUsersList.data
                 .filter( user => user.email !== email)
@@ -172,7 +183,9 @@ const  Home = () => {
                 </div>
             <div> 
             <p id="connected-user-fullname"></p>
-                {listOfUsers
+                {
+                
+                listOfUsers
                         .map(user => {
                         return(
                             <ul>
