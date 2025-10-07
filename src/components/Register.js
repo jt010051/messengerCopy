@@ -5,8 +5,9 @@ import axios from '../api/axios';
 import { proccessContext } from '../Context';
 import { Button } from 'react-bootstrap';
 import Dropdown from 'react-bootstrap/Dropdown';
+import { type } from '@testing-library/user-event/dist/type';
 
-const CREATE_URL = '/user/save';
+const CREATE_URL = '/chatUsers/save';
 
 
 
@@ -19,13 +20,13 @@ const Register = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
 
     const[user, setUser] = useState('')
-    const [gender, setGender] = useState('')
+    const [gender, setGender] = useState('male')
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [email, setEmail] = useState('')
     const [generate,setGenerate] = useState(false)
 const[submitFlag, setSubmitFlag] = useState(true)
-const [role, setRole] = useState('')
+const [role, setRole] = useState('USER')
 const LOGIN_URL = '/api/auth/user/save';
 const [birthDate, setBirthDate] = useState('')
 const [phone, setPhone] = useState('')
@@ -35,6 +36,10 @@ const [firstRun, setFirstRun] = useState(true)
 
 
     const handleSubmit = async (e) => {
+      
+      const obj = {[`ROLE_${role}`]: true} ;
+      console.log(typeof obj );
+      
       if(password !== confirmPassword){
         alert("Passwords don't match");
         return;
@@ -42,28 +47,45 @@ const [firstRun, setFirstRun] = useState(true)
 
       let json = ``;
     
-     if(phone){
+ 
       console.log(phone);
-      let testPhone = /^\+?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}$/im;
-      if(!testPhone.test(user)) alert("Not Valid Email or Phone Number") 
-      json = `{"email" : "", "password" : "${password}", 
-        "firstName" : "${firstName}", "lastName" : "${lastName}",   
-         "gender" : "${gender}", "birthDate" : "${birthDate}",
-         "phone" : "${phone}", "isPending" : "${true}"}`  
+      const testPhone = /^\+?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4,6}$/im;
+         const testEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+      if(!testPhone.test(phone) || !testEmail.test(email)) {
+        alert("Not Valid Email or Phone Number") 
+                  setUser('')
+      setEmail('')
+      setPhone('')
+      setPassword('')
+      setConfirmPassword('')
+      setFirstName('')
+      setLastName('')
+          setGender('')
+          setRole('') 
+        return
       }
-else if (email){
-  json = `{"email" : "${email}", "password" : "${password}", 
+const roleMap = new Map();
+roleMap.set(`"ROLE_${role}", true`);
+      json = `{"email" : "${email}", "password" : "${password}", 
         "firstName" : "${firstName}", "lastName" : "${lastName}",   
          "gender" : "${gender}", "birthDate" : "${birthDate}",
-         "phone" : "", "isPending" : "${true}"}`
-}
-      if(!user && !phone && !email) {
+         "phone" : "${phone}", "isPending" : {"ROLE_${role}" : ${true}}}`  
+      
+
+
+
+      if(!email && !phone) {
         alert("Please enter email or phone number")
         return;
       }
       const userJson = JSON.parse(json);
+      console.log( userJson);
+      
       try {
           const response = await axios.post(CREATE_URL, userJson);
+          console.log(response);
+          
           if (response.data === ''){
             console.log(response);
             alert("User already in database")
@@ -71,6 +93,8 @@ else if (email){
             setEmail('')
             setPhone('')
             setPassword('')
+                  setConfirmPassword('')
+
             setFirstName('')
             setLastName('')
                 setGender('')
@@ -81,8 +105,17 @@ else if (email){
     console.log("Account not found, creating new account");
     console.log(role);
 
-         nextResponse()
+  alert("Account Created")
+setUser('')
+  setEmail('')
+  setPhone('')
+  setPassword('')
+  setFirstName('')
+  setLastName('')
+        setConfirmPassword('')
 
+      setGender('')
+      setRole('')
       
  
 
@@ -102,6 +135,7 @@ else if (email){
       setEmail('')
       setPhone('')
       setPassword('')
+      setConfirmPassword('')
       setFirstName('')
       setLastName('')
           setGender('')
@@ -109,41 +143,8 @@ else if (email){
         }
      
     
-    const nextResponse = async() =>{
-      console.log(role);
-    
-      let pendingRoleUrl = ``
-      if(phone) pendingRoleUrl = `user/pendingRole?pendingRole=${role}&user=${phone}`
-     else pendingRoleUrl = `user/pendingRole?pendingRole=${role}&user=${email}`
-try{
 
-  const response = await axios.post(pendingRoleUrl)
-  alert("Account Created")
-  
-  window.location.reload();
-
-}catch(err){
-  console.log(err);
-}
-setUser('')
-  setEmail('')
-  setPhone('')
-  setPassword('')
-  setFirstName('')
-  setLastName('')
-      setGender('')
-      setRole('')
-    }
-    useEffect(()=>{
-
-  
-      const testEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-     
-         if (testEmail.test(user)) setEmail(user);
-        else setPhone(user)
-    
-        console.log("here");
-    },[user])
+ 
 
 
 
@@ -188,8 +189,12 @@ style={{backgroundColor: "white"}}
      
             <tr>
             <div>
-            <label htmlFor="text"></label>
-<input type="text" id="mailOrPhone" name="mailOrPhone" placeholder="Email or Phone Number" value={user} onChange={(e) => setUser(e.target.value)} required ></input>
+            <label htmlFor="email"></label>
+<input type="text" id="email" name="email" placeholder="Email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required ></input>
+            </div>
+                        <div>
+            <label htmlFor="phone"></label>
+<input type="number" id="phone" name="phone" placeholder="Phone" className="form-control" value={phone} onChange={(e) => setPhone(e.target.value)} required ></input>
             </div>
             </tr>
    
@@ -233,10 +238,10 @@ required />
    </div>
 <div>
   <h3>Role Requested</h3>
-<input type="radio" id="user" name="role" value="user" onClick={(e) => setRole('user')}
+<input type="radio" id="user" name="role" value="user" onClick={(e) => setRole('USER')}
 required />
     <label htmlFor="user">Standard User</label>
-    <input type="radio" id="admin" name="role" value="admin" onClick={(e) => setRole('admin')} required/>
+    <input type="radio" id="admin" name="role" value="admin" onClick={(e) => setRole('ADMIN')} required/>
     <label htmlFor="admin">Administrator</label>
 </div>
 

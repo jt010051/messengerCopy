@@ -37,32 +37,37 @@ const[user, setUser] = useState('')
 
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    // e.preventDefault();
   
     try {
         const response = await axios.post(url);
-  console.log(response);
   const accessToken = response?.data?.access_token;
   const refreshToken = response?.data?.refresh_token;
   const roles = response?.data?.authorities;
-  console.log(response.data.authorities);
-  localStorage.setItem("Authorities Copy", roles);
-  localStorage.setItem("Refresh Token Copy", refreshToken);
+  localStorage.setItem("Authorities", roles);
+  localStorage.setItem("Refresh Token", refreshToken);
   localStorage.setItem("Access Token", accessToken);
-  localStorage.setItem("Access Token Copy", accessToken);
+  localStorage.setItem("Access Token", accessToken);
+  localStorage.setItem("Logged In", true);
 
-  localStorage.setItem("email Copy", email);
-  localStorage.setItem("phone Copy", phone);
+  localStorage.setItem("email", email);
+  localStorage.setItem("phone", phone);
 
-  localStorage.setItem("password Copy", password);
-  localStorage.setItem("role Copy", roles);
+  localStorage.setItem("password", password);
+  localStorage.setItem("role", roles);
 
   setIsLoggedIn(true)
 
 setCurrentUser(user)
+        const response2 = await axios.get("/getCsrfToken");
+
 
   alert("Login Successful");
   navigate(from, { replace: true });
+
+
+  
+        
 
     } catch (err) {
   alert("error with login")
@@ -109,7 +114,9 @@ const popup =()=>{
   <section>
               {/* <p ref={errRef} className={errMsg ? "errmsg" : "offscreen"} aria-live="assertive">{errMsg}</p> */}
               <h1>Sign In</h1>
-              <form>
+              <form
+              
+              >
                   <label htmlFor="user">Email or Mobile Number:</label>
                   <input
                       type="text"
@@ -119,6 +126,14 @@ const popup =()=>{
                       onChange={(e) => setUser(e.target.value)}
                       value={user}
                       required
+                      
+                      onKeyDown={(e)=>{
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault()
+                                                    handleSubmit()
+                                                }
+                                                            }
+                                                        }
                   />
   
                   <label htmlFor="password">Password:</label>
@@ -128,6 +143,13 @@ const popup =()=>{
                       onChange={(e) => setPassword(e.target.value)}
                       value={password}
                       required
+                         onKeyDown={(e)=>{
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault()
+                                                    handleSubmit()
+                                                }
+                                                            }
+                                                        }
                   />
                   <Button onClick={handleSubmit}>Login</Button>
               </form>

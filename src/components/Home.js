@@ -4,260 +4,370 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from '../api/axios';
 import { useStompClient, useSubscription } from 'react-stomp-hooks';
 import user_icon from '../img/user_icon.png'
-import { usernameContext } from '../Context';
+import { usernameContext, messageContext, StompContext } from '../Context';
+import useWebSocket, { ReadyState } from "react-use-websocket"
+
 
 
 const  Home = () => {
-    // let email = 'jont26.smith@gmail.com';
-    // let phone = ''
-
-    const navigate = useNavigate();
-    const location = useLocation();
-    const log = location.state?.from?.pathname || "/logout";
-    const stompClient = useStompClient();
-    const messagesEndRef = useRef(null)
-
-    const [thisMessage, setThisMessage] = useState('')
-    const [activeUser, setActiveUser] = useState(false);
-    const [listOfUsers, setListOfUsers] = useState([])
-	const [selectedUser, setSelectedUser] = useState('')
-    const [recievedMessages, setRecievedMessages] = useState(false)
-    const [otherUser, setOtherUser] = useState('')
-    const [userChatResponse, setUserChatResponse] = useState([]);
-    const currentUser =localStorage.getItem("email Copy")
-    const userDetailsApi = `user/userDetails/${currentUser}`
-
-	useSubscription(`/user/public`)
-
-	useSubscription(`/user/${currentUser}/queue/messages`, (message2) => {
-        const json = JSON.parse(message2.body)
-        setOtherUser(json.senderId)
-
-        let newObj ={
-            id : (Object.keys(userChatResponse).length !== 0 ? userChatResponse.length : 0),
-            chatId : 'Jon-Thomas_Jon-Thomas2',
-            content : json.content,
-            senderId : json.senderId,
-            recipientId : json.recipientId,
-            timeStamp : new Date,
-        }
-
-        setRecievedMessages(true)
-        let data = {}
-
-        if (Object.keys(userChatResponse).length !== 0) {
-            data = userChatResponse
-            data.push(newObj)
-        }
-        else data [0] = newObj
-
-        setUserChatResponse(data)
-        fetchAndDisplayUserChat()  
-        }
-    )
-
-    // if (!currentUser) {
-    //     currentUser = localStorage.getItem("phone");
-    // }
 
 
-
-     const findAndDisplayConnectedUsers = async(e) =>{
-        console.log(currentUser);
-        const response = await axios.get(`chatUsers/currentUser/${currentUser}`)
-                console.log(response.data);
-
-     let email = (response.data.email != null ? response.data.email : null)
-    let phone = (response.data.phone != null ? response.data.phone : null)
-            const thisUser = (email != null ? email : phone)
-console.log(response.data.email);
-
-        try{
-            const connectedUsersList  
-                = await axios.get(`chatUsers/usersOnline/${thisUser}`);
-            console.log(connectedUsersList);
-            
-            setListOfUsers(connectedUsersList.data
-                .filter( user => user.email !== email)
-                .filter( user => user.phone !== phone)
-                .map(user => user.firstName))
-        }
-        catch (err) {
-            console.log(err);
-            
-        }
-    }
-
-    const fetchAndDisplayUserChat = async()=>{    
-        const response = 
-            await axios.get(`/messages/${currentUser}/${selectedUser}`)
-    
-        if(response.data){
-            setUserChatResponse(response.data)
-        }
-    } 
- 
-    if(stompClient){
-        stompClient.publish("/app/user.addUser",
-        {},
-        JSON.stringify({firstName: currentUser, status:'ONLINE'})
-        )     
-    }
- 
-    const publishMessage = () => {      
-        if(stompClient) {
-            const chatMessage = {
-                senderId: currentUser,
-                recipientId: selectedUser,
-                content: thisMessage,
-                timeStamp: new Date() 
-            }
-
-        stompClient.publish({destination: '/app/chat', body: JSON.stringify(chatMessage)})
-        let data = []
-
-        if(userChatResponse)  data = userChatResponse
-
-        data.push(chatMessage)
-        setUserChatResponse(data)
-        document.getElementById("message").value = '';
-        setThisMessage('')
-
-        }
-    }
-
-    const logout =()=>{
-        navigate(log, { replace: true });
-    }
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-    }
+const stompClient = useContext(StompContext)  
+const messagesEndRef = useRef(null)
+const [thisMessage, setThisMessage] = useState('')
+const [activeUser, setActiveUser] = useState(false);
+const [listOfUsers, setListOfUsers] = useState({})
+const [selectedUser, setSelectedUser] = useState('')
+const [otherUser, setOtherUser] = useState('')
+const [userChatResponse, setUserChatResponse] = useState([]);
+const currentUser =   localStorage.getItem("email");
+const userDetailsApi = `user/userDetails/${currentUser}`
+const {newMessage, setNewMessage} = useContext(messageContext)
+const [hasNewMessage, setHasNewMessage] = useState(new Map()); 
+const [userDetails, setUserDetails] = useState() 
+const [firstRun, setFirstRun] = useState(true)
+// const [message, setMessage] = useState({})
 
 
-    const recievedMessgs = () =>{
-        return(
-            userChatResponse?.map?.((data)=>{      
-                return(
-                    <div className={['message', 
-                        data.senderId === currentUser 
-                        ? 'sender' : 'receiver'].join(" ")}>
-                            <p> { data.content }</p>
-                            <div ref={messagesEndRef} />
-                    </div>
-                )          
-            })
-        )
-    }
+// if(stompClient && firstRun){
+//         stompClient.subscribe(`/user/public`, (m)=> onMessageRecieved(m.body))	
+// setFirstRun(false);
+// }
+
+const details  = async () => {
+    const response = await axios.get(`chatUsers/currentUser/${currentUser}`, localStorage.getItem("Authorities Copy"))
+if(response.data){
+    setUserDetails(response.data)
+    localStorage.setItem("userDetails", JSON.stringify(response.data))
+}
+}
 
 
-    useEffect(()=>{
-        findAndDisplayConnectedUsers()
-    },[])
+const onMessageRecieved = (message)=>{
+    if(!message) return
+             console.log(message.body);
+
+ findAndDisplayConnectedUsers()
+
+        const json = JSON.parse(message.body)
+console.log(json);
+    if(!json.senderId) return;
+
         
-    useEffect(()=>{
-        if(activeUser){
-            fetchAndDisplayUserChat()
-        }
-    },[selectedUser])
-
-    useEffect(() => {
-        scrollToBottom()
-    }, [publishMessage]);
-
-
-    return (
-            <>
-                    <div onClick={() =>{
-                        if(selectedUser) setSelectedUser('')
-                        if(activeUser) setActiveUser(false)
-                                        }}>
-                        <h2>Hello {currentUser}</h2>
-                </div>
-            <div className="chat-container" id="chat-page">
-                <div className="users-list">
-                    <div className="users-list-container">
-                        <h2>Online Users</h2>
-                        <ul id="connectedUsers" > 
-                        </ul>
-                </div>
-            <div> 
-            <p id="connected-user-fullname"></p>
-                {
-                
-                listOfUsers
-                        .map(user => {
-                        return(
-                            <ul>
-                                <li className={['user-item', user === selectedUser ? 'active':null].join(" ")} 
-                                    onClick={()=>{
-                                        if(!activeUser) setActiveUser(true)
-                                        setRecievedMessages(false)  
-                                        if(user !== selectedUser) 
-                                            setSelectedUser(user)
-                                        else {
-                                        setSelectedUser('')
-                                        setActiveUser(false)
-                                        }
-                                                }}>
-                                <img src={user_icon} 
-                                    alt = {user} style={{width:20, height: 20}} />
-                                    <span>
-                                        {user}
-                                    </span>
-                                    {recievedMessages && user === otherUser ?
-                                        <span className='nbr-msg'></span> 
-                                            : null
-                                    }
-                        
-                                </li>
-                            </ul>
-                            )
-                                    }
-                        )
+                    setSelectedUser(json.senderId)
+            if(message.email) return;
+                    let newObj ={
+                        id : (Object.keys(userChatResponse).length !== 0 ? userChatResponse.length : 0),
+                        chatId : `${currentUser}_${json.senderId}`,
+                        content : json.content,
+                        senderId : json.senderId,
+                        recipientId : json.recipientId,
+                        timeStamp : new Date,
+                        read : json.read,
                     }
-                
-                    
-                </div>
-            </div>
+                    localStorage.setItem("newMessage", true)
+                    setNewMessage(true)
+                    addEntry(newObj.senderId)
+                            console.log(newObj);
+                            console.log(userChatResponse);
 
-                <div className="chat-area">
-                    <div className="chat-area" id="chat-messages">         
-                        {activeUser  ?
-                        recievedMessgs()
-                        : null
-                        }    
-                    </div>
-                        {activeUser ? 
-                            <>
-                                <form id="messageForm" name="messageForm" >
-                                    <div className="message-input">
-                                        <input autoComplete="off" type="text" id="message" placeholder="Type your message..."
-                                            onChange={(e) => setThisMessage(e.target.value)}  
-                                            onKeyDown={(e)=>{
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault()
-                                                    publishMessage()
-                                                }
-                                                            }
-                                                    }
-                                        />
-                                        <Button onClick={(e)=>{
-                                            publishMessage()
-                                        }}>Send</Button>
-                                    </div>
-                                </form>
-                
-                            </>
-                                    : null}
-            </div>
-            </div>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>   
-            <Button  onClick={logout}>Logout</Button>
+                    let data = {}
+                    if (Object.keys(userChatResponse).length !== 0) {
+                        data = userChatResponse
+                        console.log(data);
+                        
+                        data.push(newObj)
+                    }
+                    else data [0] = newObj
+                    
+                    setUserChatResponse(data)
+                    if(activeUser)fetchAndDisplayUserChat()
+}
+
+   if(stompClient && userDetails){
+
+        userDetails.status = 'ONLINE'
+        stompClient.publish({
+        destination:  `/app/user.addUser`,
+      body: JSON.stringify({
+            email: userDetails.email, 
+            status: userDetails.status
+        }) 
+    }
+        ) 
         
-        </>
-    );
+   }
+   useSubscription( `/user/${currentUser}/queue/messages` , (m)=> onMessageRecieved(m))
+ useSubscription(`/user/`, (m)=> onMessageRecieved(m.body))	
+
+
+
+
+       const findAndDisplayConnectedUsers = async(e) =>{
+            const response = await axios.get(`chatUsers/currentUser/${currentUser}`, localStorage.getItem("Authorities Copy"))
+            let email = (response.data.email != null ? response.data.email : null)
+            let phone = (response.data.phone != null ? response.data.phone : null)
+            const thisUser = (email != null ? email : phone)
+
+            try{
+                const connectedUsersList  = await axios.get(`chatUsers/usersOnline/${thisUser}`, localStorage.getItem("Authorities Copy"));
+                setListOfUsers(connectedUsersList.data)  
+                for(let i = 0; i < connectedUsersList.data.length; i++){
+                    const response = await axios.get(`/messages/${currentUser}/${connectedUsersList.data[i].email}`)
+                    if(response.data && !response.data[response.data.length-1].read){
+                        addEntry(connectedUsersList.data[i].email)
+                        setNewMessage(true)
+                    }
+                }   
+            }
+            catch (err) {
+                console.log(err);
+                
+            }
+        }
+
+
+
+
+
+
+
+    const addEntry = (key) => {
+        
+        setHasNewMessage(prevMap => {
+        const newMap = new Map(prevMap); 
+        newMap.set(key, true);
+        
+        return newMap;
+        });
+    }; 
+
+    const setFalse = (key) => {
+        setHasNewMessage(prevMap => {
+        const newMap = new Map(prevMap); 
+        newMap.set(key, false);
+        
+        return newMap;
+        });
+    }; 
+
+ 
+
+
+        
+   
+        
+
+    
+
+        const fetchAndDisplayUserChat = async()=>{    
+    try{
+                const response = 
+                await axios.get(`/messages/${currentUser}/${selectedUser}`)
+        
+            if(response.data){
+                setUserChatResponse(response.data)
+                
+            }
+            
+            
+    }
+        catch (err) {
+                console.log(err);
+                
+            }
+        } 
+    
+  
+    useEffect(()=>{
+                     findAndDisplayConnectedUsers();
+
+        details()
+        },[])
+
+       
+
+        const publishMessage = () => {   
+            
+            if(stompClient) {
+                const chatMessage = {
+                    senderId: currentUser,
+                    recipientId: selectedUser,
+                    content: thisMessage,
+                    timeStamp: new Date(),
+                    read: false,
+                }
+
+            stompClient.publish({destination: '/app/chat', body: JSON.stringify(chatMessage)})
+            let data = []
+
+            if(userChatResponse)  data = userChatResponse
+                
+
+            data.push(chatMessage)
+            setUserChatResponse(data)
+            document.getElementById("message").value = '';
+            setThisMessage('')
+                
+            }
+                
+
+        }
+
+    
+
+        const scrollToBottom = () => {
+            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+        }
+
+
+        const recievedMessgs = () =>{
+            return(
+                userChatResponse?.map?.((data)=>{  
+                        
+                    return(
+                        <div className={['message', 
+                            data.senderId === currentUser 
+                            ? 'sender' : 'receiver'].join(" ")}>
+                                <p> { data.content }</p>
+                                <div ref={messagesEndRef} />
+                        </div>
+                    )          
+                })
+            )
+        }
+
+    const setRead = async (senderId, recipientId) =>{
+    try{
+            const response = axios.put(`/read/${senderId}/${recipientId}`)
+
+    }
+    catch(err){
+        console.log(err);
+        
+    }
+    }
+    
+    
+            
+        useEffect(()=>{
+            if(activeUser){
+
+                fetchAndDisplayUserChat()
+            }
+        },[selectedUser])
+
+        useEffect(() => {
+            scrollToBottom()
+        }, [publishMessage]);
+
+
+
+    
+
+        return (
+                <>
+                
+                        <div onClick={() =>{
+                            
+                            if(selectedUser) setSelectedUser('')
+                            if(activeUser) setActiveUser(false)
+                                            }}>
+                            <h2>Hello {currentUser}</h2>
+                    </div>
+                <div className="chat-container" id="chat-page">
+                    <div className="users-list">
+                        <div className="users-list-container">
+                            <h2>Online Users</h2>
+                            <ul id="connectedUsers" > 
+                            </ul>
+                    </div>
+                <div> 
+                <p id="connected-user-fullname"></p>
+                    {
+                        Array.isArray(listOfUsers) ? 
+
+                    listOfUsers
+                            .map(user => {
+
+                            return(
+                                <ul>
+                                    <li className={['user-item', user.email === selectedUser ? 'active':null].join(" ")} 
+                                        onClick={()=>{ 
+                                        
+                                            setActiveUser(!activeUser)
+
+                        
+                                        setFalse(user.email)
+                                                localStorage.setItem("newMessage", false)
+                                                setRead(currentUser, user.email)
+                                                setNewMessage(false)
+                                            if(!selectedUser)   setSelectedUser(user.email)
+                                                else setSelectedUser('')
+                                    
+                                                    }}>
+                                    <img src={user_icon} 
+                                        alt = {user.firstName} style={{width:20, height: 20}} />
+                                        <span>
+                                            {user.firstName} 
+                                        </span>
+                                        {hasNewMessage.get(user.email) && (user.email === otherUser
+                                            || !otherUser
+                                        )
+                                        
+                                        ?
+                                            <span className='nbr-msg'></span> 
+                                                : null
+                                        }
+                            
+                                    </li>
+                                </ul>
+                                )
+                                        }
+                            ) : null
+                        }
+                    
+                        
+                    </div>
+                </div>
+
+                    <div className="chat-area">
+                        <div className="chat-area" id="chat-messages">         
+                            {activeUser  ?
+                            recievedMessgs()
+                            : null
+                            }    
+                        </div>
+                            {activeUser ? 
+                                <>
+                                    <form id="messageForm" name="messageForm" >
+                                        <div className="message-input">
+                                            <input autoComplete="off" type="text" id="message" placeholder="Type your message..."
+                                                onChange={(e) => setThisMessage(e.target.value)}  
+                                                onKeyDown={(e)=>{
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault()
+                                                        publishMessage()
+                                                    }
+                                                                }
+                                                        }
+                                            />
+                                            <Button onClick={(e)=>{
+                                                publishMessage()
+                                            }}>Send</Button>
+                                        </div>
+                                    </form>
+                    
+                                </>
+                                        : null}
+                </div>
+                </div>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>   
+            
+
+            </>
+        );
 }
 
 export default Home;
